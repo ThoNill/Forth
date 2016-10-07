@@ -4,6 +4,6 @@ import java.io.IOException;
 
 public interface Routine {
 
-	void say(ForthContext context) throws IOException;
+    void say(ForthContext context) throws IOException;
 
 }

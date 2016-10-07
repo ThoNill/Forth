@@ -5,13 +5,13 @@ import toni.forth.Word;
 
 public class TestWord extends Word {
 
-	public TestWord(String name) {
-		super(name);
-	}
+    public TestWord(String name) {
+        super(name);
+    }
 
-	@Override
-	public void say(ForthContext context) {
+    @Override
+    public void say(ForthContext context) {
 
-	}
+    }
 
 }

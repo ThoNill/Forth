@@ -2,234 +2,241 @@ package toni.forth;
 
 import java.io.IOException;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 public class ForthContext {
-	final static int INTERPRET = 0;
-	final static int COMPILE = 1;
-	static Word emptyWord = new EmptyWord();
+    private static final Logger LOG = LogManager.getLogger(ForthContext.class);
 
-	int modus = INTERPRET;
-	// int aktuellAusgeführtesWort;
+    final static int INTERPRET = 0;
+    final static int COMPILE = 1;
+    static Word emptyWord = new EmptyWord();
 
-	protected Dictionary wordDict;
-	protected IntStack datenStack;
-	protected IntStack returnStack;
-	private IntStack programmStack;
-	protected ObjectHeap objectHeap;
-	protected ObjectStack objectStack;
-	
+    int modus = INTERPRET;
+    // int aktuellAusgeführtesWort;
 
-	protected TokenStream input;
-	protected Output output;
+    protected Dictionary wordDict;
+    protected IntStack datenStack;
+    protected IntStack returnStack;
+    private IntStack programmStack;
+    protected ObjectHeap objectHeap;
+    protected ObjectStack objectStack;
 
-	public ForthContext(int dictSize, int dataSize, int returnSize) {
-		super();
-		this.wordDict = new Dictionary(dictSize);
-		this.objectHeap = new ObjectHeap(dictSize);
-		this.datenStack = new IntStack(dataSize);
-		this.objectStack = new ObjectStack(dataSize);
-		
-		this.programmStack = new IntStack(returnSize);
-		this.returnStack = new IntStack(returnSize);
-		output = new SystemOutput();
-	}
+    protected TokenStream input;
+    protected Output output;
 
-	public void say(TokenStream stream) {
+    public ForthContext(int dictSize, int dataSize, int returnSize) {
+        super();
+        this.wordDict = new Dictionary(dictSize);
+        this.objectHeap = new ObjectHeap(dictSize);
+        this.datenStack = new IntStack(dataSize);
+        this.objectStack = new ObjectStack(dataSize);
 
-		setTokenStream(stream);
-		while (input.isOpen() || !programmStack.isEmpty()) {
-			sayNextWord();
-		}
+        this.programmStack = new IntStack(returnSize);
+        this.returnStack = new IntStack(returnSize);
+        output = new SystemOutput();
+    }
 
-	}
+    public void say(TokenStream stream) {
 
-	public void sayNextWord() {
-		Word w = getNextWord();
-		if (w != null) {
-			sayThisWordAndCheck(w);
-		}
-	}
+        setTokenStream(stream);
+        while (input.isOpen() || !programmStack.isEmpty()) {
+            sayNextWord();
+        }
 
-	public Word getNextWord() {
-		if (modus == COMPILE) {
-			return nextWordFromInputStream();
-		} else {
-			if (programmStack.isEmpty()) {
-				return nextWordFromInputStream();
-			} else {
-				return nextWordFromProgrammStack();
-			}
-		}
-	}
+    }
 
-	private Word nextWordFromProgrammStack() {
-		return wordDict.getWord(programmStack.peek());
-	}
+    public void sayNextWord() {
+        Word w = getNextWord();
+        if (w != null) {
+            sayThisWordAndCheck(w);
+        }
+    }
 
-	private Word nextWordFromInputStream() {
-		String name;
-		try {
-			name = input.nextToken();
-			if (name != null) {
-				if ("".equals(name)) {
-					return emptyWord;
-				}
-				if (isNumber(name)) {
-					datenStack.push(Integer.parseInt(name));
-					if (modus == COMPILE) {
-						return wordDict.search("INTCONSTANT");
-					}
-					return emptyWord;
-				} else {
-					return searchWord(name);
-				}
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(
-					"Bei Einlesen vom Imput Stream ging etwas schief");
-		}
+    public Word getNextWord() {
+        if (modus == COMPILE) {
+            return nextWordFromInputStream();
+        } else {
+            if (programmStack.isEmpty()) {
+                return nextWordFromInputStream();
+            } else {
+                return nextWordFromProgrammStack();
+            }
+        }
+    }
 
-		return null;
-	}
+    private Word nextWordFromProgrammStack() {
+        return wordDict.getWord(programmStack.peek());
+    }
 
-	public Word searchWord(String name) {
-		Word w = wordDict.search(name);
-		if (w == null) {
-			clear();
-			throw new IllegalArgumentException("Can not find the word: " + name);
-		}
-		return w;
-	}
+    private Word nextWordFromInputStream() {
+        String name;
+        try {
+            name = input.nextToken();
+            if (name != null) {
+                if ("".equals(name)) {
+                    return emptyWord;
+                }
+                if (isNumber(name)) {
+                    datenStack.push(Integer.parseInt(name));
+                    if (modus == COMPILE) {
+                        return wordDict.search("INTCONSTANT");
+                    }
+                    return emptyWord;
+                } else {
+                    return searchWord(name);
+                }
+            }
+        } catch (IOException e) {
+            LOG.error("Input Exception in nextWordFromInputStream", e);
+            throw new IllegalStateException(
+                    "Bei Einlesen vom Imput Stream ging etwas schief");
+        }
 
-	private void sayThisWordAndCheck(Word w) {
-		if (w == null) {
-			clear();
-			throw new IllegalArgumentException("word is null");
-		}
-		try {
-			sayThisWord(w);
-		} catch (Exception ex) {
-			clear();
-			throw new RuntimeException("Error while execution of word: "
-					+ w.getName() + " " + ex.getClass().getSimpleName() + " "
-					+ ex.getMessage());
-		}
-	}
+        return null;
+    }
 
-	private void sayThisWord(Word w) throws IOException {
-		if (modus == INTERPRET) {
-			w.say(this);
-			next();
-		} else {
-			if (w.isImmediate()) {
-				w.say(this);
-			} else {
-				wordDict.compile(w);
-			}
-		}
-	}
+    public Word searchWord(String name) {
+        Word w = wordDict.search(name);
+        if (w == null) {
+            clear();
+            throw new IllegalArgumentException("Can not find the word: " + name);
+        }
+        return w;
+    }
 
-	protected void gotoWord() {
-		int nextPosition = programmStack.peek() + 1; // Nach dem Wort IF, ELSE
-														// usw. steht der
-														// Verweis auf
-														// Position wohin der
-														// Interpreter gehen
-														// soll.
-		programmStack.pop();
-		pushToProgrammStack(wordDict.fetch(nextPosition));
-	}
+    private void sayThisWordAndCheck(Word w) {
+        if (w == null) {
+            clear();
+            throw new IllegalArgumentException("word is null");
+        }
+        try {
+            sayThisWord(w);
+        } catch (Exception ex) {
+            clear();
+            LOG.error("Exception in sayThisWordAndCheck", ex);
+            throw new IllegalArgumentException(
+                    "Error while execution of word: " + w.getName() + " "
+                            + ex.getClass().getSimpleName() + " "
+                            + ex.getMessage());
+        }
+    }
 
-	protected void next() {
-		if (!programmStack.isEmpty()) {
-			programmStack.plus1();
-		}
-	}
+    private void sayThisWord(Word w) throws IOException {
+        if (modus == INTERPRET) {
+            w.say(this);
+            next();
+        } else {
+            if (w.isImmediate()) {
+                w.say(this);
+            } else {
+                wordDict.compile(w);
+            }
+        }
+    }
 
-	protected void exitWord() {
-		// if (!programmStack.isEmpty())
-		{
-			programmStack.pop();
-		}
-	}
+    protected void gotoWord() {
+        int nextPosition = programmStack.peek() + 1; // Nach dem Wort IF, ELSE
+                                                     // usw. steht der
+                                                     // Verweis auf
+                                                     // Position wohin der
+                                                     // Interpreter gehen
+                                                     // soll.
+        programmStack.pop();
+        pushToProgrammStack(wordDict.fetch(nextPosition));
+    }
 
-	public void pushHeapPosition(Word w) {
-		pushToProgrammStack(w.getHeapPosition());
-	}
+    protected void next() {
+        if (!programmStack.isEmpty()) {
+            programmStack.plus1();
+        }
+    }
 
-	public void pushGotoPos(CreateWord w) {
-		pushToProgrammStack(w.getGotoPos());
-	}
+    protected void exitWord() {
+        // if (!programmStack.isEmpty())
+        {
+            programmStack.pop();
+        }
+    }
 
-	private void pushToProgrammStack(int wordPosition) {
-		programmStack.push(wordPosition);
-	}
+    public void pushHeapPosition(Word w) {
+        pushToProgrammStack(w.getHeapPosition());
+    }
 
-	protected void popFromProgrammStack(CreateWord w) {
-		int aktuellesWort = programmStack.pop();
-		w.setGotoPos(aktuellesWort); // merken um die Worte nach does> später
-										// abzuarbeiten
-										// Abbruch der Verarbeitung nach does>
-	}
+    public void pushGotoPos(CreateWord w) {
+        pushToProgrammStack(w.getGotoPos());
+    }
 
-	private boolean isNumber(String token) {
-		for (char c : token.toCharArray()) {
-			if (!Character.isDigit(c)) {
-				return false;
-			}
-		}
-		return true;
-	}
+    private void pushToProgrammStack(int wordPosition) {
+        programmStack.push(wordPosition);
+    }
 
-	public void clear() {
-		programmStack.clear();
-		returnStack.clear();
-		datenStack.clear();
-	}
+    protected void popFromProgrammStack(CreateWord w) {
+        int aktuellesWort = programmStack.pop();
+        w.setGotoPos(aktuellesWort); // merken um die Worte nach does> später
+                                     // abzuarbeiten
+                                     // Abbruch der Verarbeitung nach does>
+    }
 
-	public void setTokenStream(TokenStream stream) {
-		input = stream;
-	}
+    private boolean isNumber(String token) {
+        for (char c : token.toCharArray()) {
+            if (!Character.isDigit(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	public IntStack getDatenStack() {
-		return datenStack;
-	}
+    public void clear() {
+        programmStack.clear();
+        returnStack.clear();
+        datenStack.clear();
+    }
 
-	public IntStack getReturnStack() {
-		return returnStack;
-	}
+    public void setTokenStream(TokenStream stream) {
+        input = stream;
+    }
 
-	public IntStack getProgrammStack() {
-		return programmStack;
-	}
+    public IntStack getDatenStack() {
+        return datenStack;
+    }
 
-	public Output getOutput() {
-		return output;
-	}
+    public IntStack getReturnStack() {
+        return returnStack;
+    }
 
-	public void setOutput(Output output) {
-		this.output = output;
-	}
+    public IntStack getProgrammStack() {
+        return programmStack;
+    }
 
-	public Dictionary getDictionary() {
-		return wordDict;
-	}
+    public Output getOutput() {
+        return output;
+    }
 
-	public ObjectHeap getObjectHeap() {
-		return objectHeap;
-	}
+    public void setOutput(Output output) {
+        this.output = output;
+    }
 
-	protected void compilationOn() {
-		modus = COMPILE;
-	}
+    public Dictionary getDictionary() {
+        return wordDict;
+    }
 
-	protected void interpreterOn() {
-		if (!getProgrammStack().isEmpty()) {
-			new RuntimeException("Darf nicht sein");
-		}
-		modus = INTERPRET;
-	}
+    public ObjectHeap getObjectHeap() {
+        return objectHeap;
+    }
 
-	public ObjectStack getObjectStack() {
-		return objectStack;
-	}
+    protected void compilationOn() {
+        modus = COMPILE;
+    }
+
+    protected void interpreterOn() {
+        if (!getProgrammStack().isEmpty()) {
+            new ForthException("Darf nicht sein");
+        }
+        modus = INTERPRET;
+    }
+
+    public ObjectStack getObjectStack() {
+        return objectStack;
+    }
 }

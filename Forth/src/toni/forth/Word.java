@@ -3,55 +3,56 @@ package toni.forth;
 import java.io.IOException;
 
 public abstract class Word implements Routine {
-	String name;
-	int position;
-	int heapPosition;
-	boolean immediate = false;
+    String name;
+    int position;
+    int heapPosition;
+    boolean immediate = false;
 
-	public Word(String name) {
-		super();
-		this.name = name;
-	}
-	
- 	public int getPosition() {
- 		return position;
-	}
+    public Word(String name) {
+        super();
+        this.name = name;
+    }
 
-	public void setPosition(int position) {
-		this.position = position;
-	}
+    public int getPosition() {
+        return position;
+    }
 
+    public void setPosition(int position) {
+        this.position = position;
+    }
 
-	public String getName() {
-		return name;
-	}
-	
-	/* (non-Javadoc)
-	 * @see toni.forth.Routine#say(toni.forth.ForthContext)
-	 */
-	@Override
-	abstract public void say(ForthContext context) throws IOException ;
+    public String getName() {
+        return name;
+    }
 
-	public int getHeapPosition() {
-		return heapPosition;
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see toni.forth.Routine#say(toni.forth.ForthContext)
+     */
+    @Override
+    abstract public void say(ForthContext context) throws IOException;
 
-	public void setHeapPosition(int heapPosition) {
-		this.heapPosition = heapPosition;
-	}
+    public int getHeapPosition() {
+        return heapPosition;
+    }
 
-	public boolean isImmediate() {
-		return immediate;
-	}
+    public void setHeapPosition(int heapPosition) {
+        this.heapPosition = heapPosition;
+    }
 
-	public void setImmediate(boolean immediate) {
-		this.immediate = immediate;
-	}
+    public boolean isImmediate() {
+        return immediate;
+    }
 
-	@Override
-	public String toString() {
-		return "Word [name=" + name + ", position=" + position
-				+ ", heapPosition=" + heapPosition + ", immediate=" + immediate
-				+ "]";
-	}
+    public void setImmediate(boolean immediate) {
+        this.immediate = immediate;
+    }
+
+    @Override
+    public String toString() {
+        return "Word [name=" + name + ", position=" + position
+                + ", heapPosition=" + heapPosition + ", immediate=" + immediate
+                + "]";
+    }
 }

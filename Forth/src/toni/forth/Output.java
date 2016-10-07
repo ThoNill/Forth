@@ -1,5 +1,5 @@
 package toni.forth;
 
 public interface Output {
-	void print(String text);
+    void print(String text);
 }
