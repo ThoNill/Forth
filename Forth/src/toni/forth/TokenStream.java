@@ -1,20 +1,19 @@
 package toni.forth;
 
 import java.io.ByteArrayInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import tests.TokenStreamTest;
 
 public class TokenStream {
     private static final Logger LOG = LogManager
-            .getLogger(TokenStreamTest.class);
+            .getLogger(TokenStream.class);
 
     private char zeichen[] = new char[1];
     private boolean open = true;
